@@ -13,7 +13,8 @@ from torch.autograd import Variable
 class OthelloNNet(nn.Module):
     def __init__(self, game, args):
         # game params
-        self.board_x, self.board_y = game.getBoardSize()
+        #self.board_x, self.board_y = game.getBoardSize()
+        self.board_x, self.board_y = 64,12
         self.action_size = game.getActionSize()
         self.args = args
 
@@ -40,7 +41,7 @@ class OthelloNNet(nn.Module):
 
     def forward(self, s):
         #                                                           s: batch_size x board_x x board_y
-        s = s.view(-1, 1, self.board_x, self.board_y)                # batch_size x 1 x board_x x board_y
+        s = s.view(-1, 1, 64, 12)                # batch_size x 1 x board_x x board_y
         s = F.relu(self.bn1(self.conv1(s)))                          # batch_size x num_channels x board_x x board_y
         s = F.relu(self.bn2(self.conv2(s)))                          # batch_size x num_channels x board_x x board_y
         s = F.relu(self.bn3(self.conv3(s)))                          # batch_size x num_channels x (board_x-2) x (board_y-2)

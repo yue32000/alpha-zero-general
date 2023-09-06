@@ -13,15 +13,18 @@ import torch
 import torch.optim as optim
 
 from .OthelloNNet import OthelloNNet as onnet
-
+torch.set_printoptions(threshold=10_000)
 args = dotdict({
     'lr': 0.001,
     'dropout': 0.3,
-    'epochs': 10,
+    'epochs': 1,
     'batch_size': 64,
     'cuda': torch.cuda.is_available(),
     'num_channels': 512,
 })
+
+
+
 
 
 class NNetWrapper(NeuralNet):
@@ -61,6 +64,10 @@ class NNetWrapper(NeuralNet):
 
                 # compute output
                 out_pi, out_v = self.nnet(boards)
+                # print(boards)
+                # print(out_pi)
+                # print(out_v)
+                # print("=======================================")
                 l_pi = self.loss_pi(target_pis, out_pi)
                 l_v = self.loss_v(target_vs, out_v)
                 total_loss = l_pi + l_v
@@ -72,6 +79,7 @@ class NNetWrapper(NeuralNet):
 
                 # compute gradient and do SGD step
                 optimizer.zero_grad()
+                #FIXME backward hangs
                 total_loss.backward()
                 optimizer.step()
 
@@ -113,6 +121,7 @@ class NNetWrapper(NeuralNet):
     def load_checkpoint(self, folder='checkpoint', filename='checkpoint.pth.tar'):
         # https://github.com/pytorch/examples/blob/master/imagenet/main.py#L98
         filepath = os.path.join(folder, filename)
+        print ("load file is :    "+filepath)
         if not os.path.exists(filepath):
             raise ("No model in path {}".format(filepath))
         map_location = None if args.cuda else 'cpu'

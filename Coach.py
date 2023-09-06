@@ -4,6 +4,7 @@ import sys
 from collections import deque
 from pickle import Pickler, Unpickler
 from random import shuffle
+import chess.svg
 
 import numpy as np
 from tqdm import tqdm
@@ -47,25 +48,39 @@ class Coach():
         """
         trainExamples = []
         board = self.game.getInitBoard()
-        self.curPlayer = 1
+        self.curPlayer = True #start with chess.WHITE=True
         episodeStep = 0
 
         while True:
+            print ("episode-step: ====" , episodeStep)
             episodeStep += 1
-            canonicalBoard = self.game.getCanonicalForm(board, self.curPlayer)
+            # canonicalBoard = self.game.getCanonicalForm(board, self.curPlayer)
+            canonicalBoard = board
             temp = int(episodeStep < self.args.tempThreshold)
+            # print (canonicalBoard)
+            # print (canonicalBoard.turn)
+            # print (canonicalBoard.fen)
+            pi = self.mcts.getActionProb(canonicalBoard, self.curPlayer, temp=temp)
 
-            pi = self.mcts.getActionProb(canonicalBoard, temp=temp)
-            sym = self.game.getSymmetries(canonicalBoard, pi)
+            sym = self.game.getSymmetries(canonicalBoard, pi, self.curPlayer)
             for b, p in sym:
                 trainExamples.append([b, self.curPlayer, p, None])
 
+
             action = np.random.choice(len(pi), p=pi)
             board, self.curPlayer = self.game.getNextState(board, self.curPlayer, action)
+            print (board)
+            if self.args.display:
+                self.game.updatedisplay(board)
+            # chess.svg.board(board)
+            
+            # input("Press Enter to continue...")
 
             r = self.game.getGameEnded(board, self.curPlayer)
 
-            if r != 0:
+            if r != -2 or episodeStep > 100:
+                if episodeStep > 100:
+                    r=0
                 return [(x[0], x[2], r * ((-1) ** (x[1] != self.curPlayer))) for x in trainExamples]
 
     def learn(self):
@@ -87,6 +102,8 @@ class Coach():
                 for _ in tqdm(range(self.args.numEps), desc="Self Play"):
                     self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
                     iterationTrainExamples += self.executeEpisode()
+                    input("Press Enter to continue...")
+
 
                 # save the iteration examples to the history 
                 self.trainExamplesHistory.append(iterationTrainExamples)
@@ -102,8 +119,32 @@ class Coach():
             # shuffle examples before training
             trainExamples = []
             for e in self.trainExamplesHistory:
+                # print (e)
+                # input("Press Enter to continue...")
                 trainExamples.extend(e)
             shuffle(trainExamples)
+            # np.savetxt("trainexample.csv", trainExamples,delimiter=",")
+
+            file = open("trainexample.csv", "w")
+            # print (trainExamples)
+            for i in self.trainExamplesHistory:
+                for j in i:
+                    # print (j[0])
+                    file.write(",".join(str(s) for s in j[0].tolist() ) )
+                    file.write("\n")
+                    file.write(",".join (str(s) for s in j[1] ) )
+                    file.write("\n")
+                    file.write(str(j[2]))
+                    file.write("\n")             
+
+                # file.write( ','.join (str(s) for s in i ) + "\n")
+
+                    # file.write(str(j) + ",")
+                    # input("Press Enter to continue...")
+
+            file.close()
+
+
 
             # training new network, keeping a copy of the old one
             self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='temp.pth.tar')
@@ -138,6 +179,8 @@ class Coach():
         with open(filename, "wb+") as f:
             Pickler(f).dump(self.trainExamplesHistory)
         f.closed
+        # filename2 = os.path.join(folder,"trainexample.csv")
+        # np.savetxt(filename2, self.trainExamplesHistory,delimiter=",")
 
     def loadTrainExamples(self):
         modelFile = os.path.join(self.args.load_folder_file[0], self.args.load_folder_file[1])
