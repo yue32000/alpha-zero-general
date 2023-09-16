@@ -357,7 +357,7 @@ class chessgame(Game):
         status =  board.outcome(claim_draw=True)
         if status is None:
             return -2
-        elif status.termination == chess.CHECKMATE:
+        elif status.termination == chess.Termination.CHECKMATE:
             return -1
         else:
             return 0

@@ -78,8 +78,8 @@ class Coach():
 
             r = self.game.getGameEnded(board, self.curPlayer)
 
-            if r != -2 or episodeStep > 100:
-                if episodeStep > 100:
+            if r != -2 or episodeStep > 10:
+                if episodeStep > 10:
                     r=0
                 return [(x[0], x[2], r * ((-1) ** (x[1] != self.curPlayer))) for x in trainExamples]
 
@@ -102,7 +102,7 @@ class Coach():
                 for _ in tqdm(range(self.args.numEps), desc="Self Play"):
                     self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
                     iterationTrainExamples += self.executeEpisode()
-                    input("Press Enter to continue...")
+                    # input("Press Enter to continue...")
 
 
                 # save the iteration examples to the history 
@@ -155,8 +155,8 @@ class Coach():
             nmcts = MCTS(self.game, self.nnet, self.args)
 
             log.info('PITTING AGAINST PREVIOUS VERSION')
-            arena = Arena(lambda x: np.argmax(pmcts.getActionProb(x, temp=0)),
-                          lambda x: np.argmax(nmcts.getActionProb(x, temp=0)), self.game)
+            arena = Arena(lambda x, p: np.argmax(pmcts.getActionProb(x, p, temp=0)),
+                          lambda x, p: np.argmax(nmcts.getActionProb(x, p, temp=0)), self.game)
             pwins, nwins, draws = arena.playGames(self.args.arenaCompare)
 
             log.info('NEW/PREV WINS : %d / %d ; DRAWS : %d' % (nwins, pwins, draws))
