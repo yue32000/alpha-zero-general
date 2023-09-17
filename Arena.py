@@ -43,7 +43,8 @@ class Arena():
         turn = chess.WHITE
         board = self.game.getInitBoard()
         it = 0
-        while self.game.getGameEnded(board, turn) == -2:
+        turns = 0
+        while self.game.getGameEnded(board, turn) == -2 and turns < 100:
             it += 1
             if verbose:
                 assert self.display
@@ -60,6 +61,7 @@ class Arena():
                 assert valids[action] > 0
             (board, turn) = self.game.getNextState(board, curPlayer, action)
             curPlayer = curPlayer * -1
+            turns += 1
         if verbose:
             assert self.display
             print("Game over: Turn ", str(it), "Result ", str(self.game.getGameEnded(board, 1)))
